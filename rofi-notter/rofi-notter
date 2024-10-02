@@ -1,0 +1,129 @@
+#!/bin/bash
+
+TERMINAL=alacritty
+VIEW=zathura
+EDITOR=nvim
+# THEME="spotlight-dark"
+#e.g., rounded-purple-dark
+
+# <<------ Directories ------>> #
+personal_note="$HOME/.vaults/personal/limbo/"
+work_note="$HOME/.vaults/work/limbo/"
+learn_note="$HOME/.vaults/learn/limbo/"
+template_library="$HOME/.vaults/rofi-notes/"
+template_library="/home/user/.vaults/rofi-notes/"
+# <<------ Options ------>> #
+declare -A actions
+actions["📑 Create Note"]=$template_library
+actions["🔖 View Notes"]=$note_library
+# <<------ Main ------>> #
+create_document() {
+  document_type=$(echo -e "Personal\nWork\nLearn" | rofi -dmenu -i -p "What tipe note?" ${THEME:+-theme $THEME})
+
+  if [ -z "$document_type" ]; then
+    return
+  fi
+
+  case "$document_type" in
+    Personal)
+      template="SimpleNote.md"
+      EXTENSION="md"
+      message="Personal Document Created!"
+      PAD=$personal_note
+      ;;
+    Work)
+      template="SimpleNote.md"
+      EXTENSION="md"
+      message="Work Document Created!"
+      PAD=$work_note
+      ;;
+    Learn)
+      template="SimpleNote.md"
+      EXTENSION="md"
+      message="Learn Document Created!"
+      PAD=$learn_note
+      ;;
+    *)
+      echo "Invalid option"
+      return 1
+      ;;
+  esac
+
+  cn_name=$(rofi -dmenu -p "Enter a name for the note:" ${THEME:+-theme $THEME})
+
+  if [ -z "$cn_name" ]; then
+    return
+  fi
+
+  if [ -f "$pad/$cn_name.$EXTENSION" ]; then
+    if ! (echo -e "Yes\nNo" | rofi -dmenu -p "Note already exists. Overwrite?" ${THEME:+-theme $THEME} | grep -q "Yes"); then
+      return
+    fi
+  fi
+
+  notify-send "$message"
+  cp "$directory/$template" "$PAD/$cn_name.$EXTENSION"
+  "$TERMINAL" -e "$EDITOR" "$PAD/$cn_name.$EXTENSION"
+}
+
+edit_notes() {
+  document_type=$(echo -e "Personal\nWork\nLearn" | rofi -dmenu -i -p "What tipe note?" ${THEME:+-theme $THEME})
+
+  if [ -z "$document_type" ]; then
+    return
+  fi
+
+  case "$document_type" in
+    Personal)
+      template="SimpleNote.md"
+      EXTENSION="md"
+      message="Personal Document Created!"
+      PAD=$personal_note
+      ;;
+    Work)
+      template="SimpleNote.md"
+      EXTENSION="md"
+      message="Work Document Created!"
+      PAD=$work_note
+      ;;
+    Learn)
+      template="SimpleNote.md"
+      EXTENSION="md"
+      message="Learn Document Created!"
+      PAD=$learn_note
+      ;;
+    *)
+      echo "Invalid option"
+      return 1
+      ;;
+  esac
+  
+  document=$(find $PAD document -name '*.md' -printf '%f\n')
+  selected_document=$(echo "$document" | rofi -dmenu -i -p "📖 Open:" ${THEME:+-theme $THEME})
+  doc=$(find ~+ -type f -name "$selected_document" | head -1)
+  if [[ -n $selected_document ]]; then
+       $TERMINAL -e $EDITOR "$doc"
+  fi
+}
+
+main() {
+  selected_action=$(printf '%s\n' "${!actions[@]}" | rofi -dmenu -i -p "📂 Choose an action:" ${THEME:+-theme $THEME})
+  
+  if [ -z "$selected_action" ]; then
+    exit 0
+  fi
+
+  selected_dir_or_func="${actions[$selected_action]}"
+
+    directory="$selected_dir_or_func"
+    case $selected_action in
+      "📑 Create Note")
+        create_document
+        ;;
+      "🔖 View Notes")
+        edit_notes
+        ;;
+    esac
+}
+
+main
